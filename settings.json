@@ -1,13 +1,13 @@
 {
-  "name": "botserver",
+  "name": "bot",
   "bot-account": {
     "username": "Slobot00",
     "password": "",
     "type": "offline"
   },
   "server": {
-    "ip": "qfiesmp.in",
-    "port": 9612,
+    "ip": "centricx.mcsh.io",
+    "port": 19132,
     "version": "",
     "try-creative": false
   },
