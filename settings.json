@@ -6,8 +6,8 @@
     "type": "offline"
   },
   "server": {
-    "ip": "centricx.mcsh.io",
-    "port": 25565,
+    "ip": "hzserver.aternos.me",
+    "port": 17097,
     "version": "",
     "try-creative": false
   },
