@@ -475,7 +475,58 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/ping", (req, res) => res.send("pong"));
+app.post("/command", (req, res) => {
+  const { command } = req.body;
+  if (!command) {
+    return res.status(400).json({ success: false, msg: "No command provided" });
+  }
 
+  addLog(`[Control] Received command: ${command}`);
+
+  const cmd = command.trim().toLowerCase();
+
+  // Execute in-game and system commands
+  if (cmd === "/help") {
+    return res.json({
+      success: true,
+      msg: "Available commands:\n/help - Show commands\n/pos - Get bot location\n/status - Show connection state\n/list - List players\n/say <text> - Send in-game message",
+    });
+  } else if (cmd === "/pos") {
+    if (bot && bot.entity) {
+      const { x, y, z } = bot.entity.position;
+      return res.json({
+        success: true,
+        msg: `Bot position: X=${Math.floor(x)}, Y=${Math.floor(y)}, Z=${Math.floor(z)}`,
+      });
+    }
+    return res.json({ success: false, msg: "Bot is offline or location unknown" });
+  } else if (cmd === "/status") {
+    return res.json({
+      success: true,
+      msg: `Status: ${botState.connected ? "Connected" : "Disconnected"} | Reconnect Attempts: ${botState.reconnectAttempts}`,
+    });
+  } else if (cmd === "/list") {
+    if (bot && bot.players) {
+      const players = Object.keys(bot.players).join(", ");
+      return res.json({ success: true, msg: `Online Players: ${players}` });
+    }
+    return res.json({ success: false, msg: "Bot is not connected" });
+  } else if (cmd.startsWith("/say ")) {
+    const text = command.substring(5);
+    if (bot && botState.connected) {
+      bot.chat(text);
+      return res.json({ success: true, msg: `Chat sent: ${text}` });
+    }
+    return res.json({ success: false, msg: "Bot is not connected to server" });
+  } else {
+    // Forward unknown commands directly to server chat if connected
+    if (bot && botState.connected) {
+      bot.chat(command);
+      return res.json({ success: true, msg: `Sent to server: ${command}` });
+    }
+    return res.json({ success: false, msg: "Command not recognized or bot is offline" });
+  }
+});
 app.get("/logs", (req, res) => {
   const logs = getLogs();
 
