@@ -475,6 +475,7 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/ping", (req, res) => res.send("pong"));
+
 app.post("/command", (req, res) => {
   const { command } = req.body;
   if (!command) {
@@ -496,6 +497,76 @@ app.post("/command", (req, res) => {
       const { x, y, z } = bot.entity.position;
       return res.json({
         success: true,
+        msg: `Bot position: X=${Math.floor(x)}, Y=${Math.floor(y)}, Z=${Math.floor(z)}`,
+      });
+    }
+    return res.json({ success: false, msg: "Bot is offline or location unknown" });
+  } else if (cmd === "/status") {
+    return res.json({
+      success: true,
+      msg: `Status: ${botState.connected ? "Connected" : "Disconnected"} | Reconnect Attempts: ${botState.reconnectAttempts}`,
+    });
+  } else if (cmd === "/list") {
+    if (bot && bot.players) {
+      const players = Object.keys(bot.players).join(", ");
+      return res.json({ success: true, msg: `Online Players: ${players}` });
+    }
+    return res.json({ success: false, msg: "Bot is not connected" });
+  } else if (cmd.startsWith("/say ")) {
+    const text = command.substring(5);
+    if (bot && botState.connected) {
+      bot.chat(text);
+      return res.json({ success: true, msg: `Chat sent: ${text}` });
+    }
+    return res.json({ success: false, msg: "Bot is not connected to server" });
+  } else {
+    // Forward unknown commands directly to server chat if connected
+    if (bot && botState.connected) {
+      bot.chat(command);
+      return res.json({ success: true, msg: `Sent to server: ${command}` });
+    }
+    return res.json({ success: false, msg: "Command not recognized or bot is offline" });
+  }
+});
+
+app.get("/logs", (req, res) => {
+  const logs = getLogs();
+
+  const escapeHTML = (str) =>
+    str.replace(
+      /[&<>"']/g,
+      (m) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[m],
+    );
+
+  const logCount = logs.length;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <title>${config.name} - Logs</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+          h1 { color: #4ec9b0; }
+          pre { background: #252526; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        </style>
+      </head>
+      <body>
+        <h1>Logs for ${config.name} (Total: ${logCount})</h1>
+        <pre>${logs.map(escapeHTML).join("\n")}</pre>
+      </body>
+    </html>
+  `);
+});
         msg: `Bot position: X=${Math.floor(x)}, Y=${Math.floor(y)}, Z=${Math.floor(z)}`,
       });
     }
